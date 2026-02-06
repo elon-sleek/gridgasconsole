@@ -1,0 +1,23 @@
+# Gitleaks configuration for admin_portal
+# This uses the default rule set plus a small allowlist.
+# Docs: https://github.com/gitleaks/gitleaks
+
+title = "admin_portal gitleaks config"
+
+[extend]
+useDefault = true
+
+# Allowlist: keep tight; only ignore known safe false-positives.
+[[allowlist]]
+# Ignore common "example" placeholders.
+description = "Example/placeholder env values"
+regexes = [
+  "YOUR_.*_HERE",
+  "REPLACE_ME",
+  "CHANGEME",
+  "example",
+  "placeholder"
+]
+paths = [
+  "admin_portal/.env.example"
+]

@@ -1,0 +1,46 @@
+# .gitignore (add at repo root OR admin_portal/.gitignore)
+
+# --- Secrets / env ---
+.env
+.env.*
+.env.local
+!.env.example
+!.env.sample
+!.env.production.example
+
+# --- Next.js / tooling ---
+.next/
+out/
+node_modules/
+.turbo/
+.vercel/
+coverage/
+.eslintcache
+
+# If this .gitignore is used from a monorepo root, keep these too:
+admin_portal/.next/
+admin_portal/out/
+admin_portal/node_modules/
+admin_portal/.turbo/
+admin_portal/.vercel/
+admin_portal/coverage/
+admin_portal/.eslintcache
+
+# --- Logs ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- OS/Editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Generated build artifacts (if any) ---
+*.log
+
+# --- Node modules ---
+node_modules/
+
