@@ -8,8 +8,7 @@ title = "admin_portal gitleaks config"
 useDefault = true
 
 # Allowlist: keep tight; only ignore known safe false-positives.
-[[allowlist]]
-# Ignore common "example" placeholders.
+[allowlist]
 description = "Example/placeholder env values"
 regexes = [
   "YOUR_.*_HERE",
@@ -19,5 +18,5 @@ regexes = [
   "placeholder"
 ]
 paths = [
-  "admin_portal/.env.example"
+  ".env.example"
 ]
