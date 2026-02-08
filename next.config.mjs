@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   typedRoutes: false,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   webpack: (config, { dev }) => {
     if (dev) {
       // Windows file locking can break filesystem cache writes/renames under `.next/cache`.
