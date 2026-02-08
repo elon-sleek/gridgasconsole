@@ -15,6 +15,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+      CPANEL_USER: ${{ secrets.CPANEL_USER }}
+      CPANEL_APP_PATH: ${{ secrets.CPANEL_APP_PATH }}
+      CPANEL_PORT: ${{ secrets.CPANEL_PORT || '22' }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,6 +30,14 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
+      - name: Validate required secrets
+        run: |
+          set -euo pipefail
+          test -n "${CPANEL_HOST}" || { echo "Missing secret: CPANEL_HOST"; exit 1; }
+          test -n "${CPANEL_USER}" || { echo "Missing secret: CPANEL_USER"; exit 1; }
+          test -n "${CPANEL_APP_PATH}" || { echo "Missing secret: CPANEL_APP_PATH"; exit 1; }
+          test -n "${{ secrets.CPANEL_SSH_KEY }}" || { echo "Missing secret: CPANEL_SSH_KEY"; exit 1; }
 
       - name: Install
         run: npm ci
@@ -47,28 +61,38 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
-          cat > ~/.ssh/cpanel_key <<'KEY'
-          ${{ secrets.CPANEL_SSH_KEY }}
-          KEY
+          # Write the key exactly as stored in GitHub Secrets (no indentation).
+          # Also strip CRLF just in case the secret was pasted from Windows.
+          printf '%s' "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/cpanel_key
+          sed -i 's/\r$//' ~/.ssh/cpanel_key
           chmod 600 ~/.ssh/cpanel_key
-          ssh-keyscan -p "${{ secrets.CPANEL_PORT || '22' }}" -H "${{ secrets.CPANEL_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -p "${CPANEL_PORT}" -H "${CPANEL_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Verify SSH connectivity
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/cpanel_key -p "${CPANEL_PORT}" -o IdentitiesOnly=yes \
+            "${CPANEL_USER}@${CPANEL_HOST}" 'echo "SSH OK"'
 
       - name: Upload bundle (rsync)
         run: |
           set -euo pipefail
+          ssh -i ~/.ssh/cpanel_key -p "${CPANEL_PORT}" -o IdentitiesOnly=yes \
+            "${CPANEL_USER}@${CPANEL_HOST}" \
+            "mkdir -p '${CPANEL_APP_PATH}'"
           rsync -az --delete \
-            -e "ssh -i ~/.ssh/cpanel_key -p ${{ secrets.CPANEL_PORT || '22' }} -o IdentitiesOnly=yes" \
+            -e "ssh -i ~/.ssh/cpanel_key -p ${CPANEL_PORT} -o IdentitiesOnly=yes" \
             .deploy/ \
-            "${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}:${{ secrets.CPANEL_APP_PATH }}/"
+            "${CPANEL_USER}@${CPANEL_HOST}:${CPANEL_APP_PATH}/"
 
       - name: Install prod deps + restart app
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/cpanel_key -p ${{ secrets.CPANEL_PORT || '22' }} -o IdentitiesOnly=yes \
-            "${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}" \
-            'bash -s' <<'EOF'
+          ssh -i ~/.ssh/cpanel_key -p "${CPANEL_PORT}" -o IdentitiesOnly=yes \
+            "${CPANEL_USER}@${CPANEL_HOST}" \
+            "CPANEL_APP_PATH='${CPANEL_APP_PATH}' bash -s" <<'EOF'
           set -euo pipefail
-          cd '${{ secrets.CPANEL_APP_PATH }}'
+          cd "${CPANEL_APP_PATH}"
 
           # Ensure Node/NPM are available in non-interactive shells (common on cPanel)
           source ~/.bashrc >/dev/null 2>&1 || true
