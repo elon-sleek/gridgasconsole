@@ -1,0 +1,91 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: cpanel-deploy-main
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # Create a minimal deploy bundle (no source, no node_modules)
+      - name: Prepare deploy bundle
+        run: |
+          set -euo pipefail
+          rm -rf .deploy
+          mkdir -p .deploy
+          cp -a .next .deploy/
+          if [ -d public ]; then cp -a public .deploy/; fi
+          cp -a package.json .deploy/
+          if [ -f package-lock.json ]; then cp -a package-lock.json .deploy/; fi
+          if [ -f next.config.mjs ]; then cp -a next.config.mjs .deploy/; fi
+
+      - name: Configure SSH key
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          cat > ~/.ssh/cpanel_key <<'KEY'
+          ${{ secrets.CPANEL_SSH_KEY }}
+          KEY
+          chmod 600 ~/.ssh/cpanel_key
+          ssh-keyscan -p "${{ secrets.CPANEL_PORT || '22' }}" -H "${{ secrets.CPANEL_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload bundle (rsync)
+        run: |
+          set -euo pipefail
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/cpanel_key -p ${{ secrets.CPANEL_PORT || '22' }} -o IdentitiesOnly=yes" \
+            .deploy/ \
+            "${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}:${{ secrets.CPANEL_APP_PATH }}/"
+
+      - name: Install prod deps + restart app
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/cpanel_key -p ${{ secrets.CPANEL_PORT || '22' }} -o IdentitiesOnly=yes \
+            "${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}" \
+            'bash -s' <<'EOF'
+          set -euo pipefail
+          cd '${{ secrets.CPANEL_APP_PATH }}'
+
+          # Ensure Node/NPM are available in non-interactive shells (common on cPanel)
+          source ~/.bashrc >/dev/null 2>&1 || true
+          source ~/.bash_profile >/dev/null 2>&1 || true
+
+          command -v node >/dev/null 2>&1 || { echo "node not found"; exit 1; }
+          command -v npm  >/dev/null 2>&1 || { echo "npm not found"; exit 1; }
+
+          if [ -f package-lock.json ]; then
+            npm ci --omit=dev --no-audit --no-fund
+          else
+            npm install --omit=dev --no-audit --no-fund
+          fi
+
+          # Many cPanel Node apps run under Passenger. Touching this usually restarts.
+          mkdir -p tmp
+          touch tmp/restart.txt
+
+          echo "Deploy complete."
+          EOF
