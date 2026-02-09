@@ -11,6 +11,7 @@
     "dev:clean": "npm run clean && next dev --turbo",
     "build": "next build",
     "start": "next start",
+    "start:cpanel": "node server.js",
     "lint": "next lint",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\"",
     "typecheck": "tsc --noEmit"

@@ -1,0 +1,130 @@
+name: Deploy (cPanel)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: cpanel-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Prepare deploy bundle (Next standalone)
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf deploy
+          mkdir -p deploy
+
+          if [ ! -f .next/standalone/server.js ]; then
+            echo "Expected .next/standalone/server.js (standalone build)."
+            echo "Make sure next.config.mjs has: output: 'standalone'"
+            exit 1
+          fi
+
+          # Keep Next's standalone output under `.next/standalone/`.
+          # This matches our `server.js` startup file and Next's recommended layout.
+          mkdir -p deploy/.next
+          cp -R .next/standalone deploy/.next/standalone
+
+          # Next requires static assets to be present at `.next/static`.
+          cp -R .next/static deploy/.next/static
+
+          # Public assets
+          if [ -d public ]; then
+            cp -R public deploy/public
+          fi
+
+          # Keep an explicit startup file at the app root (cPanel Node "Startup File").
+          # If your cPanel app already points at a different startup file, update it there.
+          cp server.js deploy/server.js
+
+      - name: Configure SSH
+        shell: bash
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_SSH_PORT: ${{ secrets.CPANEL_SSH_PORT }}
+          CPANEL_SSH_KEY: ${{ secrets.CPANEL_SSH_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CPANEL_HOST}" ] || [ -z "${CPANEL_SSH_KEY}" ]; then
+            echo "Missing required secrets: CPANEL_HOST and/or CPANEL_SSH_KEY"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          echo "${CPANEL_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          PORT="${CPANEL_SSH_PORT:-22}"
+          ssh-keyscan -p "${PORT}" -H "${CPANEL_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Deploy via rsync
+        shell: bash
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_USER: ${{ secrets.CPANEL_USER }}
+          CPANEL_SSH_PORT: ${{ secrets.CPANEL_SSH_PORT }}
+          CPANEL_DEPLOY_PATH: ${{ secrets.CPANEL_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CPANEL_USER}" ] || [ -z "${CPANEL_DEPLOY_PATH}" ]; then
+            echo "Missing required secrets: CPANEL_USER and/or CPANEL_DEPLOY_PATH"
+            exit 1
+          fi
+
+          PORT="${CPANEL_SSH_PORT:-22}"
+          DEST="${CPANEL_USER}@${CPANEL_HOST}:${CPANEL_DEPLOY_PATH%/}/"
+
+          # Ensure the destination exists.
+          ssh -i ~/.ssh/id_ed25519 -p "${PORT}" "${CPANEL_USER}@${CPANEL_HOST}" \
+            "mkdir -p '${CPANEL_DEPLOY_PATH%/}'"
+
+          # `--delete` keeps the remote in sync with the deploy bundle.
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/id_ed25519 -p ${PORT}" \
+            --exclude ".env" --exclude ".env.*" \
+            deploy/ "${DEST}"
+
+      - name: Restart cPanel Node app (Passenger)
+        shell: bash
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_USER: ${{ secrets.CPANEL_USER }}
+          CPANEL_SSH_PORT: ${{ secrets.CPANEL_SSH_PORT }}
+          CPANEL_DEPLOY_PATH: ${{ secrets.CPANEL_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          PORT="${CPANEL_SSH_PORT:-22}"
+
+          # Most cPanel Node apps (Passenger) restart when tmp/restart.txt changes.
+          ssh -i ~/.ssh/id_ed25519 -p "${PORT}" "${CPANEL_USER}@${CPANEL_HOST}" \
+            "mkdir -p '${CPANEL_DEPLOY_PATH%/}/tmp' && touch '${CPANEL_DEPLOY_PATH%/}/tmp/restart.txt'"
