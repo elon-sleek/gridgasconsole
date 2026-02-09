@@ -31,6 +31,11 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          # Dummy values so Next.js can collect page data without throwing.
+          # Real values live in .env on the server and are never committed.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
         run: npm run build
 
       - name: Prepare deploy bundle (Next standalone)
