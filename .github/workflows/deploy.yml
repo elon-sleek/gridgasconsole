@@ -27,13 +27,6 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install system deps (rsync)
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y rsync
-
       - name: Install
         run: npm ci
 
@@ -98,7 +91,7 @@ jobs:
           PORT="${CPANEL_SSH_PORT:-22}"
           ssh-keyscan -p "${PORT}" -H "${CPANEL_HOST}" >> ~/.ssh/known_hosts
 
-      - name: Deploy via rsync
+      - name: Deploy via tar+scp
         shell: bash
         env:
           CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
@@ -114,17 +107,41 @@ jobs:
           fi
 
           PORT="${CPANEL_SSH_PORT:-22}"
-          DEST="${CPANEL_USER}@${CPANEL_HOST}:${CPANEL_DEPLOY_PATH%/}/"
+          SSH="ssh -i ~/.ssh/id_ed25519 -p ${PORT}"
+          REMOTE="${CPANEL_USER}@${CPANEL_HOST}"
+          DEPLOY_DIR="${CPANEL_DEPLOY_PATH%/}"
 
-          # Ensure the destination exists.
-          ssh -i ~/.ssh/id_ed25519 -p "${PORT}" "${CPANEL_USER}@${CPANEL_HOST}" \
-            "mkdir -p '${CPANEL_DEPLOY_PATH%/}'"
+          # 1. Create a tarball of the deploy bundle (excludes .env files).
+          tar czf /tmp/deploy.tar.gz -C deploy .
 
-          # `--delete` keeps the remote in sync with the deploy bundle.
-          rsync -az --delete \
-            -e "ssh -i ~/.ssh/id_ed25519 -p ${PORT}" \
-            --exclude ".env" --exclude ".env.*" \
-            deploy/ "${DEST}"
+          # 2. Upload the tarball.
+          scp -i ~/.ssh/id_ed25519 -P "${PORT}" /tmp/deploy.tar.gz "${REMOTE}:/tmp/deploy.tar.gz"
+
+          # 3. On the server: back up .env, wipe the deploy dir, extract, restore .env.
+          ${SSH} "${REMOTE}" bash -s <<SCRIPT
+            set -euo pipefail
+            mkdir -p "${DEPLOY_DIR}"
+
+            # Preserve any existing .env* files.
+            if ls "${DEPLOY_DIR}"/.env* 1>/dev/null 2>&1; then
+              cp "${DEPLOY_DIR}"/.env* /tmp/_env_backup/ 2>/dev/null || {
+                mkdir -p /tmp/_env_backup
+                cp "${DEPLOY_DIR}"/.env* /tmp/_env_backup/
+              }
+            fi
+
+            # Clean old deploy and extract new bundle.
+            find "${DEPLOY_DIR}" -mindepth 1 -not -name '.env*' -delete 2>/dev/null || true
+            tar xzf /tmp/deploy.tar.gz -C "${DEPLOY_DIR}"
+
+            # Restore .env files.
+            if ls /tmp/_env_backup/.env* 1>/dev/null 2>&1; then
+              cp /tmp/_env_backup/.env* "${DEPLOY_DIR}/"
+              rm -rf /tmp/_env_backup
+            fi
+
+            rm -f /tmp/deploy.tar.gz
+          SCRIPT
 
       - name: Restart cPanel Node app (Passenger)
         shell: bash
