@@ -27,6 +27,13 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Install system deps (rsync)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y rsync
+
       - name: Install
         run: npm ci
 
