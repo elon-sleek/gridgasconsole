@@ -6,7 +6,7 @@ import { formatSupabaseError, isMissingRelationError } from '@/lib/supabaseError
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { use, useMemo, useState } from 'react';
 
 type AssetType = 'meter' | 'tank' | 'changeover';
 
@@ -53,8 +53,9 @@ function tenantLabel(t: TenantRow | undefined): string {
   return t.full_name || t.email || t.customer_id || t.id;
 }
 
-export default function AssetDetailPage({ params }: { params: { id: string } }) {
-  const assetId = String(params?.id ?? '').trim();
+export default function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const assetId = String(id ?? '').trim();
 
   const qc = useQueryClient();
   const supabase = useMemo(() => getSupabaseClient(), []);

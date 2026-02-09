@@ -4,7 +4,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { authedFetch } from '@/lib/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useState } from 'react';
+import { use, useState } from 'react';
 
 type TenantRow = Record<string, any>;
 
@@ -35,9 +35,9 @@ type VendRow = {
   created_at: string;
 };
 
-export default function CustomerDetailPage({ params }: { params: { id: string } }) {
+export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: tenantId } = use(params);
   const qc = useQueryClient();
-  const tenantId = params.id;
 
   const [actionError, setActionError] = useState<string | null>(null);
 
