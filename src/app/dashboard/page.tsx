@@ -133,6 +133,8 @@ export default function Home() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['vw_admin_kpis'],
     enabled: !!user,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     queryFn: async () => {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase.from('vw_admin_kpis').select('*').single();

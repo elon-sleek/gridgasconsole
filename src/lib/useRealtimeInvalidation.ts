@@ -37,6 +37,14 @@ export function useRealtimeInvalidation(
     if (!enabled) return;
     if (!specs.length) return;
 
+    const invalidateAll = () => {
+      for (const spec of specs) {
+        for (const qk of spec.invalidate) {
+          queryClient.invalidateQueries({ queryKey: qk });
+        }
+      }
+    };
+
     const channels = specs.map((spec) => {
       const schema = spec.schema ?? 'public';
       const events = spec.events ?? ['INSERT', 'UPDATE', 'DELETE'];
@@ -47,9 +55,7 @@ export function useRealtimeInvalidation(
 
       events.forEach((event) => {
         channel.on('postgres_changes', { event, schema, table: spec.table }, () => {
-          for (const qk of spec.invalidate) {
-            queryClient.invalidateQueries({ queryKey: qk });
-          }
+          invalidateAll();
         });
       });
 
@@ -62,16 +68,19 @@ export function useRealtimeInvalidation(
     const pollId =
       pollIntervalMs > 0
         ? setInterval(() => {
-            for (const spec of specs) {
-              for (const qk of spec.invalidate) {
-                queryClient.invalidateQueries({ queryKey: qk });
-              }
-            }
+            invalidateAll();
           }, pollIntervalMs)
         : null;
 
+    // When user returns to the tab/app, sync immediately (no waiting).
+    const onVis = () => {
+      if (document.visibilityState === 'visible') invalidateAll();
+    };
+    document.addEventListener('visibilitychange', onVis);
+
     return () => {
       if (pollId) clearInterval(pollId);
+      document.removeEventListener('visibilitychange', onVis);
       channels.forEach((ch) => {
         try {
           (supabase as any).removeChannel(ch);

@@ -33,11 +33,22 @@ export const useSessionStore = create<SessionState>((set) => ({
           : NaN;
       const stableLoginAt = Number.isFinite(lastSignInAt) ? lastSignInAt : null;
 
-      const shouldResetLoginAt = !state.loginAt || (prevUserId && nextUserId && prevUserId !== nextUserId);
+      const userChanged = prevUserId && nextUserId && prevUserId !== nextUserId;
+
+      // Reset loginAt when:
+      // - first time we see a session
+      // - the user changes
+      // - Supabase reports a newer last_sign_in_at (actual re-login)
+      const isRelogin =
+        stableLoginAt != null &&
+        (state.loginAt == null || stableLoginAt > state.loginAt + 1_000);
+
       const loginAt = session
-        ? shouldResetLoginAt
-          ? stableLoginAt ?? Date.now()
-          : state.loginAt
+        ? stableLoginAt != null
+          ? // Always trust Supabase's sign-in timestamp; it changes on real logins.
+            (userChanged || isRelogin || state.loginAt == null ? stableLoginAt : state.loginAt)
+          : // Fallback if Supabase didn't provide a sign-in time.
+            (state.loginAt == null || userChanged ? Date.now() : state.loginAt)
         : null;
 
       return {
