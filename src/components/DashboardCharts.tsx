@@ -230,6 +230,76 @@ function BarChart({ values, label }: { values: number[]; label?: string }) {
   );
 }
 
+/** Animated placeholder skeleton chart shown while data loads / on error / empty */
+function SkeletonChart({ message, submessage }: { message?: string; submessage?: string }) {
+  const w = 600;
+  const h = 200;
+  const pad = 24;
+  // Generate a gentle sine-wave placeholder
+  const pts = Array.from({ length: 30 }, (_, i) => {
+    const x = pad + (i * (w - pad * 2)) / 29;
+    const y = h / 2 + Math.sin(i * 0.45) * 40 + Math.cos(i * 0.22) * 20;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const area = `${pad},${h - pad} ${pts} ${w - pad},${h - pad}`;
+
+  return (
+    <div className="relative">
+      <svg
+        width="100%"
+        height={h}
+        viewBox={`0 0 ${w} ${h}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="text-primary/20"
+        aria-hidden
+      >
+        {/* Subtle grid */}
+        <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke="currentColor" strokeOpacity="0.3" />
+        <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="currentColor" strokeOpacity="0.3" />
+        {[0.25, 0.5, 0.75].map((r) => (
+          <line
+            key={r}
+            x1={pad}
+            y1={pad + (h - pad * 2) * r}
+            x2={w - pad}
+            y2={pad + (h - pad * 2) * r}
+            stroke="currentColor"
+            strokeOpacity="0.15"
+            strokeDasharray="4"
+          />
+        ))}
+
+        {/* Animated area */}
+        <polygon points={area} fill="currentColor" fillOpacity="0.25">
+          <animate attributeName="opacity" values="0.18;0.35;0.18" dur="2.4s" repeatCount="indefinite" />
+        </polygon>
+
+        {/* Animated line */}
+        <polyline
+          points={pts}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        >
+          <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2.4s" repeatCount="indefinite" />
+        </polyline>
+      </svg>
+
+      {/* Overlay message */}
+      {message && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-sm text-textSecondary dark:text-dark-textSecondary">{message}</span>
+          {submessage && (
+            <span className="text-xs text-textSecondary/70 dark:text-dark-textSecondary/70 mt-1">{submessage}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Standalone duration filter bar that can be used separately
 export function DurationFilterBar() {
   const ctx = useDashboardDateRange();
@@ -574,23 +644,17 @@ export function DashboardCharts() {
       {/* Chart area */}
       <div className="bg-surfaceHover dark:bg-dark-surface/50 rounded-lg p-4">
         {currentQuery.isLoading ? (
-          <div className="h-[200px] flex items-center justify-center text-sm text-textSecondary">
-            Loading chart data...
-          </div>
+          <SkeletonChart message="Loading chart data…" />
         ) : currentQuery.error ? (
-          <div className="h-[200px] flex flex-col items-center justify-center text-sm text-red-500">
-            <div>Error loading data</div>
-            <div className="text-xs mt-1">
-              {currentQuery.error instanceof Error ? currentQuery.error.message : 'Unknown error'}
-            </div>
-            <div className="text-xs mt-2 text-textSecondary">
-              Ensure admin_chart_rpcs.sql has been applied to Supabase
-            </div>
-          </div>
+          <SkeletonChart
+            message={(() => {
+              const err = currentQuery.error as any;
+              return typeof err?.message === 'string' ? err.message : 'Error loading data';
+            })()}
+            submessage="Data will appear here once available"
+          />
         ) : chartValues.length === 0 ? (
-          <div className="h-[200px] flex items-center justify-center text-sm text-textSecondary">
-            No data available for this period
-          </div>
+          <SkeletonChart message="No data yet for this period" submessage="Activity will populate this chart" />
         ) : isBarChart ? (
           <BarChart values={chartValues} label={`${chartValues.length} data points`} />
         ) : (
