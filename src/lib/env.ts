@@ -5,45 +5,17 @@ export type Env = {
   mapApiKey?: string;
 };
 
-function required(value: string | undefined, key: string): string {
-  if (!value) {
-    throw new Error(`Missing required env: ${key}`);
-  }
-  return value;
-}
-
-function optional(value: string | undefined): string | undefined {
-  return value || undefined;
-}
-
-/** Lazily resolved so the module can be imported at build time without throwing. */
-let _env: Env | undefined;
-
-export function getEnv(): Env {
-  if (!_env) {
-    _env = {
-      supabaseUrl: required(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        'NEXT_PUBLIC_SUPABASE_URL'
-      ),
-      supabaseAnonKey: required(
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        'NEXT_PUBLIC_SUPABASE_ANON_KEY'
-      ),
-      thingsboardBaseUrl: optional(process.env.NEXT_PUBLIC_TB_BASE_URL),
-      mapApiKey: optional(process.env.NEXT_PUBLIC_MAP_API_KEY)
-    };
-  }
-  return _env;
-}
-
 /**
- * Keep the original export for backward compat.
- * Accessing any property triggers the lazy init via a Proxy,
- * so importing the module at build time no longer throws.
+ * Next.js inlines `process.env.NEXT_PUBLIC_*` as string literals at BUILD time.
+ * The values MUST appear as direct `process.env.NEXT_PUBLIC_X` expressions
+ * (no indirection, no variables, no Proxy) for the compiler to replace them.
+ *
+ * We read them directly here so the build can inline them into the client bundle.
+ * Server-only env vars (without NEXT_PUBLIC_) are only read at runtime.
  */
-export const env: Env = new Proxy({} as Env, {
-  get(_target, prop: string) {
-    return getEnv()[prop as keyof Env];
-  }
-});
+export const env: Env = {
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+  supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
+  thingsboardBaseUrl: process.env.NEXT_PUBLIC_TB_BASE_URL || undefined,
+  mapApiKey: process.env.NEXT_PUBLIC_MAP_API_KEY || undefined,
+};
