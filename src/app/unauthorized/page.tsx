@@ -16,7 +16,7 @@ export default function UnauthorizedPage() {
             Signed in as <span className="font-medium">{user.email}</span>? Please contact the dev team. 
           </p>
         ) : null}
-        <Link href="/" className="inline-block rounded-control bg-primary text-white px-4 py-2 text-sm font-semibold hover:opacity-90">
+        <Link href="/dashboard" className="inline-block rounded-control bg-primary text-white px-4 py-2 text-sm font-semibold hover:opacity-90">
           Go to Dashboard
         </Link>
       </div>

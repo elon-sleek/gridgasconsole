@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import { useSessionStore } from '@/lib/sessionStore';
 
-export function LoginForm({ redirectTo = '/' }: { redirectTo?: '/' | '/login' }) {
+export function LoginForm({ redirectTo = '/dashboard' }: { redirectTo?: '/' | '/login' | '/dashboard' }) {
   const router = useRouter();
   const supabase = useMemo(() => getSupabaseClient(), []);
   const setSession = useSessionStore((s) => s.setSession);
@@ -29,7 +29,8 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: '/' | '/login' })
     }
 
     setSession(data.session ?? null);
-    router.replace(redirectTo);
+    const destination = redirectTo === '/' ? '/dashboard' : redirectTo;
+    router.replace(destination);
     router.refresh();
   }
 

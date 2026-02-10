@@ -11,10 +11,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      router.replace('/');
+      router.replace('/dashboard');
       router.refresh();
     }
   }, [user, router]);
 
-  return <LoginForm redirectTo="/" />;
+  return <LoginForm redirectTo="/dashboard" />;
 }

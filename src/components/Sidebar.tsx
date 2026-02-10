@@ -27,7 +27,7 @@ import {
 } from '@/components/AppIcons';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', Icon: IconDashboard },
+  { href: '/dashboard', label: 'Dashboard', Icon: IconDashboard },
   { href: '/assets', label: 'Assets', Icon: IconAssets },
   { href: '/facility-managers', label: 'Facility Managers', Icon: IconFacilityManagers },
   { href: '/customers', label: 'Customers/Tenants', Icon: IconCustomers },
@@ -252,7 +252,7 @@ export function Sidebar() {
       )}
     >
       <div className="px-4 py-4 border-b border-border dark:border-dark-border">
-        <Link href="/" className="flex items-center gap-3" aria-label="Go to dashboard">
+        <Link href="/dashboard" className="flex items-center gap-3" aria-label="Go to dashboard">
           <div className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden bg-white border-2 border-cyan-500">
             <img src="/assets/Gridgas_logo.png" alt="GridGas Logo" className="w-full h-full object-contain" />
           </div>
