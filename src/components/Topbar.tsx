@@ -36,7 +36,14 @@ export function Topbar() {
     const tick = () => setElapsed(fmtElapsed(Date.now() - loginAt));
     tick();
     const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+    const onVis = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, [loginAt]);
 
   // Fixed login timestamp string (never changes once set)

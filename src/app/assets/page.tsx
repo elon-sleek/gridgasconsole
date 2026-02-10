@@ -127,6 +127,7 @@ export default function AssetsPage() {
       setFirmwareVersion('');
       setInstallAddress('');
       await qc.invalidateQueries({ queryKey: ['assets'] });
+      await qc.invalidateQueries({ queryKey: ['vw_admin_kpis'] });
     },
     onError: (err) => setFormError(formatSupabaseError(err))
   });
@@ -152,6 +153,7 @@ export default function AssetsPage() {
       setSelectedAssetIds({});
       setSelectedFmId('');
       await qc.invalidateQueries({ queryKey: ['assets'] });
+      await qc.invalidateQueries({ queryKey: ['vw_admin_kpis'] });
     },
     onError: (err) => setAssignError(formatSupabaseError(err))
   });

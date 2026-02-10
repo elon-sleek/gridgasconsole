@@ -107,6 +107,7 @@ export default function GasVendorsPage() {
       setCapacityKg('');
       setActive(true);
       await qc.invalidateQueries({ queryKey: ['gas_vendors_admin_payload'] });
+      await qc.invalidateQueries({ queryKey: ['vw_admin_kpis'] });
     },
     onError: (err) => setFormError(formatSupabaseError(err))
   });
@@ -128,6 +129,7 @@ export default function GasVendorsPage() {
       setApprovalLat('');
       setApprovalLng('');
       await qc.invalidateQueries({ queryKey: ['gas_vendors_admin_payload'] });
+      await qc.invalidateQueries({ queryKey: ['vw_admin_kpis'] });
     },
     onError: (err) => setApprovalError(formatSupabaseError(err))
   });
@@ -145,6 +147,7 @@ export default function GasVendorsPage() {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['gas_vendors_admin_payload'] });
+      await qc.invalidateQueries({ queryKey: ['vw_admin_kpis'] });
     }
   });
 

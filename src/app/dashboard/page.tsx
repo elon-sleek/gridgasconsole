@@ -227,7 +227,6 @@ export default function Home() {
       },
     ],
     !!user,
-    15_000,
   );
   // Move useMemo before conditional return to fix React Hooks order
   const assignedToFms = useMemo(() => {

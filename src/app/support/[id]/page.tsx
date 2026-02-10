@@ -156,6 +156,7 @@ export default function TicketDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support-ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['vw_admin_kpis'] });
       alert('Ticket escalated');
     },
   });
@@ -173,6 +174,7 @@ export default function TicketDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['support-ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['vw_admin_kpis'] });
       alert('Ticket closed');
       router.push('/support');
     },
