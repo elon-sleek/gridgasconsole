@@ -32,10 +32,12 @@ jobs:
 
       - name: Build
         env:
-          # Dummy values so Next.js can collect page data without throwing.
-          # Real values live in .env on the server and are never committed.
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          # Public runtime config is baked into the build output.
+          # Use GitHub Secrets so the deployed client bundle points at the real services.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_TB_BASE_URL: ${{ secrets.NEXT_PUBLIC_TB_BASE_URL }}
+          NEXT_PUBLIC_MAP_API_KEY: ${{ secrets.NEXT_PUBLIC_MAP_API_KEY }}
         run: npm run build
 
       - name: Prepare deploy bundle (Next standalone)
