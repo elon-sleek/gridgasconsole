@@ -53,26 +53,22 @@ jobs:
             exit 1
           fi
 
-          # The standalone output IS the complete app.
-          # Copy its contents as the deploy root.
-          cp -R .next/standalone/* deploy/
-          cp -R .next/standalone/.next deploy/.next 2>/dev/null || true
+          # Keep the standalone output under `.next/standalone` (Next.js recommended).
+          # We'll run it by `chdir`-ing into that directory from our startup wrapper.
+          mkdir -p deploy/.next
+          cp -R .next/standalone deploy/.next/
 
-          # Next requires static assets at .next/static (not included in standalone).
-          mkdir -p deploy/.next/static
-          cp -R .next/static/* deploy/.next/static/
+          # Next requires static assets to be present at `.next/static` relative to the standalone dir.
+          mkdir -p deploy/.next/standalone/.next
+          cp -R .next/static deploy/.next/standalone/.next/static
 
-          # Public assets.
+          # Public assets should also be alongside the standalone server.
           if [ -d public ]; then
-            cp -R public deploy/public
+            cp -R public deploy/.next/standalone/public
           fi
 
-          # Overwrite with our cPanel startup wrapper.
+          # cPanel startup wrapper at the app root.
           cp server.js deploy/server.js
-
-          echo "=== Deploy bundle contents ==="
-          ls -la deploy/
-          ls -la deploy/.next/ || true
 
       - name: Configure SSH
         shell: bash
