@@ -89,12 +89,23 @@ const METRIC_LABELS: Record<MetricOption, string> = {
   price_changes: 'Price Changes',
 };
 
+const METRIC_Y_LABELS: Record<MetricOption, string> = {
+  usage: 'kg',
+  topups: 'kg',
+  fm_growth: 'Count',
+  tenant_growth: 'Count',
+  revenue: '₦',
+  price_changes: '₦/kg',
+};
+
+const X_LABEL = 'Time Period';
+
 function toNumber(value: unknown): number | null {
   const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
   return Number.isFinite(n) ? n : null;
 }
 
-function AreaChart({ values, label }: { values: number[]; label?: string }) {
+function AreaChart({ values, label, yLabel, xLabel }: { values: number[]; label?: string; yLabel?: string; xLabel?: string }) {
   const w = 600;
   const h = 200;
   const pad = 24;
@@ -123,7 +134,7 @@ function AreaChart({ values, label }: { values: number[]; label?: string }) {
 
   return (
     <div className="relative">
-      <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" className="text-primary">
+      <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="text-primary">
         {/* Grid lines */}
         <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke="currentColor" strokeOpacity="0.1" />
         <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="currentColor" strokeOpacity="0.1" />
@@ -160,6 +171,20 @@ function AreaChart({ values, label }: { values: number[]; label?: string }) {
         <text x={pad - 4} y={h - pad} textAnchor="end" fontSize="10" fill="currentColor" fillOpacity="0.5">
           {min.toLocaleString()}
         </text>
+
+        {/* Y-axis title */}
+        {yLabel && (
+          <text x={8} y={h / 2} textAnchor="middle" fontSize="10" fill="currentColor" fillOpacity="0.5" transform={`rotate(-90, 8, ${h / 2})`}>
+            {yLabel}
+          </text>
+        )}
+
+        {/* X-axis title */}
+        {xLabel && (
+          <text x={w / 2} y={h - 4} textAnchor="middle" fontSize="10" fill="currentColor" fillOpacity="0.5">
+            {xLabel}
+          </text>
+        )}
       </svg>
       {label && (
         <div className="absolute bottom-2 right-4 text-xs text-textSecondary dark:text-dark-textSecondary">
@@ -170,7 +195,7 @@ function AreaChart({ values, label }: { values: number[]; label?: string }) {
   );
 }
 
-function BarChart({ values, label }: { values: number[]; label?: string }) {
+function BarChart({ values, label, yLabel, xLabel }: { values: number[]; label?: string; yLabel?: string; xLabel?: string }) {
   const w = 600;
   const h = 200;
   const pad = 24;
@@ -189,7 +214,7 @@ function BarChart({ values, label }: { values: number[]; label?: string }) {
 
   return (
     <div className="relative">
-      <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" className="text-primary">
+      <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="text-primary">
         {/* Grid */}
         <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke="currentColor" strokeOpacity="0.1" />
         <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="currentColor" strokeOpacity="0.1" />
@@ -220,6 +245,20 @@ function BarChart({ values, label }: { values: number[]; label?: string }) {
         <text x={pad - 4} y={h - pad} textAnchor="end" fontSize="10" fill="currentColor" fillOpacity="0.5">
           0
         </text>
+
+        {/* Y-axis title */}
+        {yLabel && (
+          <text x={8} y={h / 2} textAnchor="middle" fontSize="10" fill="currentColor" fillOpacity="0.5" transform={`rotate(-90, 8, ${h / 2})`}>
+            {yLabel}
+          </text>
+        )}
+
+        {/* X-axis title */}
+        {xLabel && (
+          <text x={w / 2} y={h - 4} textAnchor="middle" fontSize="10" fill="currentColor" fillOpacity="0.5">
+            {xLabel}
+          </text>
+        )}
       </svg>
       {label && (
         <div className="absolute bottom-2 right-4 text-xs text-textSecondary dark:text-dark-textSecondary">
@@ -653,9 +692,9 @@ export function DashboardCharts() {
         ) : chartValues.length === 0 ? (
           <SkeletonChart message="No data yet for this period" submessage="Activity will populate this chart" />
         ) : isBarChart ? (
-          <BarChart values={chartValues} label={`${chartValues.length} data points`} />
+          <BarChart values={chartValues} label={`${chartValues.length} data points`} yLabel={METRIC_Y_LABELS[metric]} xLabel={X_LABEL} />
         ) : (
-          <AreaChart values={chartValues} label={`${chartValues.length} data points`} />
+          <AreaChart values={chartValues} label={`${chartValues.length} data points`} yLabel={METRIC_Y_LABELS[metric]} xLabel={X_LABEL} />
         )}
       </div>
     </div>
