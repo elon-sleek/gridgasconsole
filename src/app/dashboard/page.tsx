@@ -141,16 +141,94 @@ export default function Home() {
     }
   });
 
-  useRealtimeInvalidation([
-    { table: 'tenant_profiles', invalidate: [['vw_admin_kpis']] },
-    { table: 'fm_profiles', invalidate: [['vw_admin_kpis']] },
-    { table: 'buildings', invalidate: [['vw_admin_kpis']] },
-    { table: 'assets', invalidate: [['vw_admin_kpis']] },
-    { table: 'asset_assignments', invalidate: [['vw_admin_kpis']] },
-    { table: 'support_tickets', invalidate: [['vw_admin_kpis']] },
-    { table: 'gas_vendors', invalidate: [['vw_admin_kpis']] },
-    { table: 'vendor_deliveries', invalidate: [['vw_admin_kpis']] }
-  ]);
+  useRealtimeInvalidation(
+    [
+      // Core dashboard counts
+      {
+        table: 'tenant_profiles',
+        invalidate: [
+          ['vw_admin_kpis'],
+          ['time_filtered_kpis'],
+          ['chart_usage'],
+          ['chart_tenant_growth'],
+        ]
+      },
+      {
+        table: 'fm_profiles',
+        invalidate: [
+          ['vw_admin_kpis'],
+          ['time_filtered_kpis'],
+          ['chart_fm_growth'],
+        ]
+      },
+      {
+        table: 'buildings',
+        invalidate: [
+          ['vw_admin_kpis'],
+        ]
+      },
+      {
+        table: 'assets',
+        invalidate: [
+          ['vw_admin_kpis'],
+        ]
+      },
+      {
+        table: 'asset_assignments',
+        invalidate: [
+          ['vw_admin_kpis'],
+        ]
+      },
+      {
+        table: 'support_tickets',
+        invalidate: [
+          ['vw_admin_kpis'],
+        ]
+      },
+      {
+        table: 'gas_vendors',
+        invalidate: [
+          ['vw_admin_kpis'],
+        ]
+      },
+      {
+        table: 'vendor_deliveries',
+        invalidate: [
+          ['vw_admin_kpis'],
+          ['time_filtered_kpis'],
+        ]
+      },
+
+      // Charts + period metrics data sources
+      {
+        table: 'gas_purchases',
+        invalidate: [
+          ['chart_topups'],
+        ]
+      },
+      {
+        table: 'meter_telemetry',
+        invalidate: [
+          ['chart_usage'],
+        ]
+      },
+      {
+        table: 'wallet_transactions',
+        invalidate: [
+          ['chart_revenue'],
+          ['time_filtered_kpis'],
+        ]
+      },
+      {
+        table: 'admin_audit_log',
+        invalidate: [
+          ['chart_price_changes'],
+        ]
+      },
+    ],
+    !!user,
+    15_000,
+  );
   // Move useMemo before conditional return to fix React Hooks order
   const assignedToFms = useMemo(() => {
     if (!data) return 0;

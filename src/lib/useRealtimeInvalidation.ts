@@ -24,7 +24,11 @@ function stableKey(specs: RealtimeInvalidateSpec[]): string {
   );
 }
 
-export function useRealtimeInvalidation(specs: RealtimeInvalidateSpec[], enabled: boolean = true) {
+export function useRealtimeInvalidation(
+  specs: RealtimeInvalidateSpec[],
+  enabled: boolean = true,
+  pollIntervalMs: number = 0,
+) {
   const queryClient = useQueryClient();
   const supabase = useMemo(() => getSupabaseClient(), []);
   const key = stableKey(specs);
@@ -53,7 +57,21 @@ export function useRealtimeInvalidation(specs: RealtimeInvalidateSpec[], enabled
       return channel;
     });
 
+    // Optional fallback polling: keeps UI counts accurate even when Realtime is not enabled
+    // for one or more tables (common in new Supabase projects).
+    const pollId =
+      pollIntervalMs > 0
+        ? setInterval(() => {
+            for (const spec of specs) {
+              for (const qk of spec.invalidate) {
+                queryClient.invalidateQueries({ queryKey: qk });
+              }
+            }
+          }, pollIntervalMs)
+        : null;
+
     return () => {
+      if (pollId) clearInterval(pollId);
       channels.forEach((ch) => {
         try {
           (supabase as any).removeChannel(ch);
@@ -63,5 +81,5 @@ export function useRealtimeInvalidation(specs: RealtimeInvalidateSpec[], enabled
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, key]);
+  }, [enabled, key, pollIntervalMs]);
 }
