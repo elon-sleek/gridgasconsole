@@ -4,16 +4,25 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSessionStore } from '@/lib/sessionStore';
 import { getSupabaseClient } from '@/lib/supabaseClient';
-import { formatDistanceToNow } from 'date-fns';
 import { IconAccount } from '@/components/AppIcons';
+
+/** Format milliseconds elapsed into "Xh Ym Zs" */
+function fmtElapsed(ms: number): string {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
 
 export function Topbar() {
   const user = useSessionStore((s) => s.user);
-  const session = useSessionStore((s) => s.session);
   const loginAt = useSessionStore((s) => s.loginAt);
   const supabase = useMemo(() => getSupabaseClient(), []);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [loginDuration, setLoginDuration] = useState('');
+  const [elapsed, setElapsed] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
   async function handleSignOut() {
@@ -21,16 +30,20 @@ export function Topbar() {
     window.location.href = '/login';
   }
 
+  // Tick every second to keep the elapsed counter live
   useEffect(() => {
-    if (session?.user && loginAt) {
-      const updateDuration = () => {
-        setLoginDuration(formatDistanceToNow(loginAt, { addSuffix: false }));
-      };
-      updateDuration();
-      const interval = setInterval(updateDuration, 60000); // Update every minute
-      return () => clearInterval(interval);
-    }
-  }, [session, loginAt]);
+    if (!loginAt) return;
+    const tick = () => setElapsed(fmtElapsed(Date.now() - loginAt));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [loginAt]);
+
+  // Fixed login timestamp string (never changes once set)
+  const loginTimeStr = useMemo(
+    () => (loginAt ? new Date(loginAt).toLocaleString() : ''),
+    [loginAt],
+  );
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -48,7 +61,7 @@ export function Topbar() {
       <div className="min-w-0">
         <div className="text-sm font-semibold truncate">{user?.email || 'Admin'}</div>
         <div className="text-xs text-textSecondary dark:text-dark-textSecondary truncate">
-          {loginAt ? `Logged in: ${new Date(loginAt).toLocaleString()} • Duration: ${loginDuration || '—'}` : '—'}
+          {loginTimeStr ? `Logged in: ${loginTimeStr} · ${elapsed}` : '—'}
         </div>
       </div>
 

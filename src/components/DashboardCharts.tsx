@@ -234,47 +234,44 @@ function BarChart({ values, label }: { values: number[]; label?: string }) {
 function SkeletonChart({ message, submessage }: { message?: string; submessage?: string }) {
   const w = 600;
   const h = 200;
-  const pad = 24;
-  // Generate a gentle sine-wave placeholder
-  const pts = Array.from({ length: 30 }, (_, i) => {
-    const x = pad + (i * (w - pad * 2)) / 29;
-    const y = h / 2 + Math.sin(i * 0.45) * 40 + Math.cos(i * 0.22) * 20;
+  // No internal padding – the wave spans the full width of the container
+  const pts = Array.from({ length: 60 }, (_, i) => {
+    const x = (i * w) / 59;
+    const y = h * 0.45 + Math.sin(i * 0.35) * (h * 0.22) + Math.cos(i * 0.18) * (h * 0.1);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
-  const area = `${pad},${h - pad} ${pts} ${w - pad},${h - pad}`;
+  const area = `0,${h} ${pts} ${w},${h}`;
 
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <svg
         width="100%"
         height={h}
         viewBox={`0 0 ${w} ${h}`}
-        preserveAspectRatio="xMidYMid meet"
-        className="text-primary/20"
+        preserveAspectRatio="none"
+        className="text-primary/20 block w-full"
         aria-hidden
       >
-        {/* Subtle grid */}
-        <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke="currentColor" strokeOpacity="0.3" />
-        <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="currentColor" strokeOpacity="0.3" />
+        {/* Horizontal grid hints */}
         {[0.25, 0.5, 0.75].map((r) => (
           <line
             key={r}
-            x1={pad}
-            y1={pad + (h - pad * 2) * r}
-            x2={w - pad}
-            y2={pad + (h - pad * 2) * r}
+            x1={0}
+            y1={h * r}
+            x2={w}
+            y2={h * r}
             stroke="currentColor"
-            strokeOpacity="0.15"
-            strokeDasharray="4"
+            strokeOpacity="0.12"
+            strokeDasharray="6"
           />
         ))}
 
-        {/* Animated area */}
+        {/* Animated area fill – edge to edge */}
         <polygon points={area} fill="currentColor" fillOpacity="0.25">
-          <animate attributeName="opacity" values="0.18;0.35;0.18" dur="2.4s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.15;0.35;0.15" dur="2.4s" repeatCount="indefinite" />
         </polygon>
 
-        {/* Animated line */}
+        {/* Animated line – edge to edge */}
         <polyline
           points={pts}
           fill="none"
