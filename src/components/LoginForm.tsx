@@ -35,61 +35,47 @@ export function LoginForm({ redirectTo = '/dashboard' }: { redirectTo?: '/' | '/
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-surfaceMuted dark:bg-dark-surfaceMuted px-4">
-      <div className="w-full max-w-md card p-8 space-y-6">
-        {/* GridGas Board Logo & Branding */}
-        <div className="text-center space-y-3">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden bg-white border-2 border-cyan-500">
-              <img src="/assets/Gridgas_logo.png" alt="GridGas Logo" className="w-full h-full object-contain" />
+    <main
+      className="min-h-screen w-full bg-black bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/assets/admin-login-bg.png')" }}
+    >
+      <div className="min-h-screen w-full bg-black/20 flex items-center justify-end px-4 sm:px-8 md:px-12 lg:px-16 py-8">
+        <div className="w-full max-w-md bg-transparent p-6 sm:p-8">
+          <p className="text-white text-lg sm:text-xl font-medium mb-6">sign in with your credentials</p>
+
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-white">Email</label>
+              <input
+                type="email"
+                required
+                className="w-full rounded-control border border-white/90 bg-transparent px-3 py-2.5 text-sm text-white placeholder-white/70 outline-none focus:border-white focus:ring-2 focus:ring-white/25"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter email"
+              />
             </div>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">GridGas Board</h1>
-            <p className="text-sm text-textSecondary dark:text-dark-textSecondary">by The Grid Gas Network</p>
-          </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-white">Password</label>
+              <input
+                type="password"
+                required
+                className="w-full rounded-control border border-white/90 bg-transparent px-3 py-2.5 text-sm text-white placeholder-white/70 outline-none focus:border-white focus:ring-2 focus:ring-white/25"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+              />
+            </div>
+            {error && <p className="text-sm text-red-300">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-control bg-[#FFC259] text-black py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-60"
+            >
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
         </div>
-
-        <div className="border-t border-border dark:border-dark-border pt-4">
-          <h2 className="text-xl font-semibold">Admin Portal</h2>
-          <p className="text-sm text-textSecondary dark:text-dark-textSecondary mt-1">Sign in with your credentials</p>
-        </div>
-        <form className="space-y-3" onSubmit={handleSubmit}>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Email</label>
-            <input
-              type="email"
-              required
-              className="w-full rounded-control border border-border dark:border-dark-border bg-surface dark:bg-dark-surface px-3 py-2 text-sm"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Password</label>
-            <input
-              type="password"
-              required
-              className="w-full rounded-control border border-border dark:border-dark-border bg-surface dark:bg-dark-surface px-3 py-2 text-sm"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-control bg-primary text-white py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-60"
-          >
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-8 text-center text-sm text-textSecondary dark:text-dark-textSecondary">
-        <p>© 2024 The Grid Gas Network</p>
-        <p className="mt-1">GridGas Board · Enterprise LPG Management Platform</p>
       </div>
     </main>
   );
